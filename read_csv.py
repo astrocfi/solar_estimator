@@ -15,7 +15,7 @@ def _read_pvwatts_file(filename):
     df = pd.read_csv(filename, skiprows=31, dtype=header_types)
     df = df.set_index(["Month", "Day", "Hour"])
     df = df.filter(["DC Array Output (W)"])
-    df.rename(columns={"DC Array Output (W)": "DCW"}, inplace=True)
+    df.rename(columns={"DC Array Output (W)": "Gen_DCW"}, inplace=True)
 
     return df
 
@@ -32,9 +32,9 @@ def read_pv_data():
     df_north = _read_pvwatts_file("data/pvwatts_hourly_north.csv")
 
     df = df_east.join(df_south, lsuffix="_E", rsuffix="_S")
-    df_west.rename(columns={"DCW": "DCW_W"}, inplace=True)
+    df_west.rename(columns={"Gen_DCW": "Gen_DCW_W"}, inplace=True)
     df = df.join(df_west)
-    df_north.rename(columns={"DCW": "DCW_N"}, inplace=True)
+    df_north.rename(columns={"Gen_DCW": "Gen_DCW_N"}, inplace=True)
     df = df.join(df_north)
 
     return df
@@ -56,10 +56,10 @@ def read_usage_data():
     df_usage.rename(columns={"Avg Wattage": "Used_ACKW"}, inplace=True)
     df_solar = df[df["Name"] == "Solar Production"].copy()
     df_solar["Avg Wattage"] = -df_solar["Avg Wattage"]
-    df_solar.rename(columns={"Avg Wattage": "Total_Gen_Cur_ACKW"}, inplace=True)
+    df_solar.rename(columns={"Avg Wattage": "Gen_Cur_ACKW"}, inplace=True)
     df = df_usage.join(df_solar, lsuffix="_1", rsuffix="_2")
-    df = df.filter(["Used_ACKW", "Total_Gen_Cur_ACKW"])
+    df = df.filter(["Used_ACKW", "Gen_Cur_ACKW"])
     df["Used_ACKW"] = df["Used_ACKW"] / 1000
-    df["Total_Gen_Cur_ACKW"] = df["Total_Gen_Cur_ACKW"] / 1000
+    df["Gen_Cur_ACKW"] = df["Gen_Cur_ACKW"] / 1000
 
     return df
