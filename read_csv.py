@@ -1,3 +1,4 @@
+import csv
 import numpy as np
 import pandas as pd
 
@@ -63,3 +64,16 @@ def read_usage_data():
     df["Gen_Cur_ACKW"] = df["Gen_Cur_ACKW"] / 1000
 
     return df
+
+def read_nem3_data():
+    # Data from Avoided Cost Calculator at
+    # https://www.cpuc.ca.gov/industries-and-topics/electrical-energy/demand-side-management/energy-efficiency/idsm
+    # Rows are hours, columns are months; all in $/MWh
+
+    with open("data/nem3_sell_rates.csv", newline='') as csvfile:
+        reader = csv.reader(csvfile)
+        nem3_data = []
+        for row in reader:
+            nem3_data.append([float(x)/1000 for x in row])
+
+    return nem3_data
