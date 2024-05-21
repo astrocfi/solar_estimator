@@ -40,7 +40,7 @@ def read_pv_data():
 
     return df
 
-def read_usage_data():
+def read_usage_data(year):
     # DateTime,Device ID,Name,Device Type,Device Make,Device Model,
     # Device Location,Avg Wattage,kWh
 
@@ -48,7 +48,7 @@ def read_usage_data():
         "Avg Wattage": np.float64
     }
 
-    df = pd.read_csv("data/usage_2022.csv", skiprows=1, dtype=header_types)
+    df = pd.read_csv(f"data/usage_{year}.csv", skiprows=1, dtype=header_types)
     df["Month"] = [int(x[5:7]) for x in df["DateTime"]]
     df["Day"] = [int(x[8:10]) for x in df["DateTime"]]
     df["Hour"] = [int(x[11:13]) for x in df["DateTime"]]
@@ -63,6 +63,16 @@ def read_usage_data():
     df["Used_ACKW"] = df["Used_ACKW"] / 1000
     df["Gen_Cur_ACKW"] = df["Gen_Cur_ACKW"] / 1000
 
+    return df
+
+def read_monthly_usage_data(year):
+    # Month,kWh
+    df = pd.read_csv(f"data/monthly_usage_{year}.csv", index_col="Month")
+    return df
+
+def read_monthly_gen_data(year):
+    # Month,kWh
+    df = pd.read_csv(f"data/monthly_generation_{year}.csv", index_col="Month")
     return df
 
 def read_nem3_data():

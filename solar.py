@@ -3,7 +3,11 @@ import numpy as np
 import numpy_financial as npf
 import pandas as pd
 
-from read_csv import read_pv_data, read_usage_data, read_nem3_data
+from read_csv import (read_pv_data,
+                      read_usage_data,
+                      read_monthly_usage_data,
+                      read_monthly_gen_data,
+                      read_nem3_data)
 
 DEFAULT_INVERTER_EFFICIENCY = 0.99
 DEFAULT_PANEL_WATTS = 1000 # In the analysis files
@@ -114,6 +118,12 @@ PANEL_LAYOUTS = {
         ],
         "total_loss": 0.15,
     },
+    "mydesign2": {
+        "panels": [
+            {"name": "1", "panel_watts": 400, "direction": "west", "number": 1, "shading": 0}
+        ],
+        "total_loss": 0.15,
+    }
 }
 
 INVERTERS = {
@@ -320,7 +330,7 @@ def run_one_scenario(panel_type, inverter_type, battery_capacity,
         install_cost = rated_dckw * 1000 * 2.66 + 23044
 
     if show_output:
-        usage_2022 = df_usage["Used_ACKW"].sum()
+        usage_historical = df_usage["Used_ACKW"].sum()
 
         print("System design:")
         print("  Rate plan:", tou_type)
@@ -329,7 +339,7 @@ def run_one_scenario(panel_type, inverter_type, battery_capacity,
         print(f"  DC rating: {rated_dckw:,.2f} kW")
         print(f"  Total generation: {total_annual_kwh_gen:,.2f} kWh/yr")
         print("Usage:")
-        print(f"  2022 usage:  {usage_2022:,.2f} kWh/yr")
+        print(f"  {OLD_USAGE_YEAR} usage:  {usage_historical:,.2f} kWh/yr")
         print(f"  Added EV:    {EV_MILES} miles/yr")
         print(f"  Total usage: {total_annual_kwh_use:,.2f} kWh/yr")
         print(f"  Max:         {usage_max:,.2f} kWh/hr")
@@ -344,44 +354,62 @@ def run_one_scenario(panel_type, inverter_type, battery_capacity,
 
     if True:
         plt.figure()
-        df_monthly["Gen_ACKW"].plot(color="orange", lw=2, label="Modeled System Gen")
-        df_monthly["Battery_Delta"].plot(color="orange", lw=1, ls="-",
-                                        label="Modeled Battery Delta")
-        df_monthly["Used_ACKW_EV"].plot(color="red", lw=3, label="2022 Usage")
-        df_monthly["Net_Usage"].plot(color="black", lw=3, label="Net Usage")
+        df_monthly["Gen_ACKW"].plot(color="orange", lw=1, marker="+", ms=4,
+                                    label="Modeled System Gen")
+        df_gen_monthly["kWh"].plot(color="orange", lw=3, marker="+", ms=10,
+                                   label=f"Actual System Gen ({NEW_USAGE_YEAR})")
+        # df_monthly["Battery_Delta"].plot(color="orange", lw=1, ls="-", marker='+', ms=5,
+        #                                 label="Modeled Battery Delta")
+        df_monthly["Used_ACKW_EV"].plot(color="red", lw=1, marker="+", ms=4,
+                                        label=f"Modeled Usage (from {OLD_USAGE_YEAR})")
+        df_usage_monthly["kWh"].plot(color="red", lw=3, marker="+", ms=10,
+                                     label=f"Actual Usage ({NEW_USAGE_YEAR})")
+        df_monthly["Net_Usage"].plot(color="black", lw=1, marker='+', ms=4,
+                                     label="Modeled Net Usage")
+        (df_usage_monthly-df_gen_monthly)["kWh"].plot(color="black", lw=3, ms=10,
+                                        label=f"Actual Net Usage ({NEW_USAGE_YEAR})")
+        print('Model monthly generation:')
+        print(df_monthly["Gen_ACKW"])
+        print('Model monthly use:')
+        print(df_monthly["Used_ACKW_EV"])
         plt.legend()
         plt.ylabel("kWh/month")
         plt.xlabel("Month")
         plt.xticks(range(1,13))
+        plt.title(f'Modeled/Actual Generation vs. Modeled ({OLD_USAGE_YEAR})/Actual ({NEW_USAGE_YEAR}) Usage')
         plt.show()
 
     if True:
         plt.figure()
-        df_monthly["Net_Cost"].plot(color="black", lw=2, label="Net Cost")
+        df_monthly["Net_Cost"].plot(color="black", lw=2, marker='+', ms=10,
+                                    label="Net Cost")
         plt.legend()
         plt.ylabel("$/month")
         plt.xlabel("Month")
         plt.xticks(range(1,13))
+        total_cost = df_monthly["Net_Cost"].sum()
+        plt.title(f'Estimated Net Cost Per Month (total ${int(total_cost):,d})')
         plt.show()
 
     if True:
         if panel_type == "current":
-            label = "Modeled System Gen"
+            label = "Modeled Old System Gen"
         else:
-            label = "New System Gen"
+            label = "Modeled New System Gen"
         df_daily["Gen_ACKW"].plot(color="orange", lw=2, label=label)
-        df_daily["Used_ACKW"].plot(color="black", lw=3, label="2022 Usage")
-        df_daily["Gen_Cur_ACKW"].plot(color="green", lw=1, label="2022 Gen Cur Sys")
+        df_daily["Used_ACKW"].plot(color="black", lw=3, label=f"{OLD_USAGE_YEAR} Actual Usage")
+        df_daily["Gen_Cur_ACKW"].plot(color="green", lw=1, label=f"{OLD_USAGE_YEAR} Actual Gen")
 
-        scale = df_daily["Gen_ACKW"].mean() / df_daily["Gen_Cur_ACKW"].mean()
+        # scale = df_daily["Gen_ACKW"].mean() / df_daily["Gen_Cur_ACKW"].mean()
         # print(f"New/Old Gen Scale: {scale:.3f}")
         # if system != "current":
         #     (df_daily["Total_Gen_Cur_ACKW"]*scale).plot(color="green", lw=1, ls="dashed",
-        #                                                 label="2022 Gen Scaled")
+        #                                                 label=f"{OLD_USAGE_YEAR} Gen Scaled")
         plt.legend()
+        plt.title('Net Generation Per Month')
         plt.ylabel("kWh/day")
 
-    if True:
+    if False:
         plt.figure()
         df_monthly["Gen_ACKW"].plot()
         plt.ylabel("Generated kWh/month")
@@ -389,12 +417,12 @@ def run_one_scenario(panel_type, inverter_type, battery_capacity,
         plt.xticks(range(1,13))
         plt.show()
 
-    if True:
+    if False:
         plt.figure()
         df["Gen_ACKW"].plot(color="orange", lw=2, label="Modeled System Gen")
         df["Battery_Charge"].plot(color="orange", lw=1, ls="-",
                                 label="Modeled Battery Charge")
-        df["Used_ACKW_EV"].plot(color="red", lw=3, label="2022 Usage")
+        df["Used_ACKW_EV"].plot(color="red", lw=3, label=f"{OLD_USAGE_YEAR} Usage")
         df["Net_Usage"].plot(color="black", lw=3, label="Net Usage")
         plt.legend()
         plt.show()
@@ -479,8 +507,12 @@ def panels_vs_cost():
     plt.show()
 
 # Initialize global data
+OLD_USAGE_YEAR = 2022
+NEW_USAGE_YEAR = 2024
 df_pv = read_pv_data()
-df_usage = read_usage_data()
+df_usage = read_usage_data(OLD_USAGE_YEAR)
+df_usage_monthly = read_monthly_usage_data(NEW_USAGE_YEAR)
+df_gen_monthly = read_monthly_gen_data(NEW_USAGE_YEAR)
 nem3_data = read_nem3_data()
 
 
@@ -494,22 +526,23 @@ nem3_data = read_nem3_data()
 # inverter_type = "solaredge"
 inverter_type = "enphase"
 
-panel_type = "none"
+# panel_type = "none"
 # panel_type = "test"
 # panel_type = "current"
 # panel_type = "starpower"
 # panel_type = "earthelectric"
 # panel_type = "svce100_bid3"
 # panel_type = "svce100_3300_bid3"
-# panel_type = "mydesign1"
+panel_type = "mydesign1"
+# panel_type = "mydesign2"
 
 tou_type = "NEM2-TOUC"
 # tou_type = "NEM2-TOUD"
 # tou_type = "NEM3-TOUC"
 # tou_type = "NEM3-TOUD"
 
-# EV_MILES = 0
-EV_MILES = 10000
+EV_MILES = 0
+# EV_MILES = 10000
 EV_POWER_PER_MILE = 0.346
 EV_ANNUAL_POWER = EV_MILES * EV_POWER_PER_MILE
 daily_ev_amount = EV_ANNUAL_POWER / 365
