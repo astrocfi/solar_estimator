@@ -66,7 +66,14 @@ def read_usage_data(year):
     return df
 
 def read_monthly_usage_data(year):
-    # Month,kWh
+    """_summary_
+
+    Args:
+        year (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """    # Month,kWh
     df = pd.read_csv(f"data/monthly_usage_{year}.csv", index_col="Month")
     return df
 

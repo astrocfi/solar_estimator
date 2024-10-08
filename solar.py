@@ -172,6 +172,12 @@ def initialize_rate_schedule(df, tou_type):
         off_peak_hours = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14]
         mid_peak_hours = [15,21,22,23]
         on_peak_hours = [16,17,18,19,20]
+    elif tou_type.endswith("EELEC"):
+        winter_months = [1, 2, 3, 4, 5, 10, 11, 12]
+        summer_months = [6, 7, 8, 9]
+        off_peak_hours = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14]
+        mid_peak_hours = [15,21,22,23]
+        on_peak_hours = [16,17,18,19,20]
     else:
         assert False, tou_type
 
@@ -199,6 +205,13 @@ def initialize_rate_schedule(df, tou_type):
         df.loc[summer_off_peak_index, "Buy_Price"] = 0.24171
         df.loc[summer_mid_peak_index, "Buy_Price"] = 0.44373
         df.loc[summer_on_peak_index, "Buy_Price"] = 0.5542
+    elif tou_type.endswith("EELEC"):
+        df.loc[winter_off_peak_index, "Buy_Price"] = 0.34831
+        df.loc[winter_mid_peak_index, "Buy_Price"] = 0.36217
+        df.loc[winter_on_peak_index, "Buy_Price"] = 0.38426
+        df.loc[summer_off_peak_index, "Buy_Price"] = 0.39722
+        df.loc[summer_mid_peak_index, "Buy_Price"] = 0.45390
+        df.loc[summer_on_peak_index, "Buy_Price"] = 0.61578
     else:
         assert False, tou_type
 
@@ -540,6 +553,7 @@ tou_type = "NEM2-TOUC"
 # tou_type = "NEM2-TOUD"
 # tou_type = "NEM3-TOUC"
 # tou_type = "NEM3-TOUD"
+# tou_type = "NEM3-EELEC"
 
 EV_MILES = 0
 # EV_MILES = 10000
@@ -548,8 +562,10 @@ EV_ANNUAL_POWER = EV_MILES * EV_POWER_PER_MILE
 daily_ev_amount = EV_ANNUAL_POWER / 365
 ev_time = 1 # Hour in 24-hour format
 
-# battery_capacity = 0
-battery_capacity = 13.6 # Franklin
+battery_capacity = 0
+# battery_capacity = 13.6 * .75 # Franklin
+# battery_capacity = (13.6 + 15) * .75 # Franklin
+# battery_capacity = (13.6 + 15 + 15) * .75 # Franklin
 # battery_capacity = 13.6 * 5
 
 run_one_scenario(panel_type, inverter_type, battery_capacity,
